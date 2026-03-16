@@ -1,3 +1,15 @@
 node_modules/
 dist/
+*.tsbuildinfo
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+.env
+.env.*
+*.log
+npm-debug.log*
+coverage/
 .k*
