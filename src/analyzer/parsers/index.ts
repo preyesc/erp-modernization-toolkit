@@ -1,0 +1,41 @@
+import { ParserRegistry } from './parser-registry.js';
+import { DataFlexParser } from './dataflex.js';
+import { CobolParser } from './cobol.js';
+import { AbapParser } from './abap.js';
+import { RpgParser } from './rpg.js';
+import { Progress4glParser } from './progress4gl.js';
+import { PlsqlParser } from './plsql.js';
+import { FoxproParser } from './foxpro.js';
+import { DelphiParser } from './delphi.js';
+import { PowerBuilderParser } from './powerbuilder.js';
+import { NaturalParser } from './natural.js';
+import { PickBasicParser } from './pickbasic.js';
+
+export function createDefaultRegistry(): ParserRegistry {
+  const registry = new ParserRegistry();
+  registry.register(new DataFlexParser());
+  registry.register(new CobolParser());
+  registry.register(new AbapParser());
+  registry.register(new RpgParser());
+  registry.register(new Progress4glParser());
+  registry.register(new PlsqlParser());
+  registry.register(new FoxproParser());
+  registry.register(new DelphiParser());
+  registry.register(new PowerBuilderParser());
+  registry.register(new NaturalParser());
+  registry.register(new PickBasicParser());
+  return registry;
+}
+
+export { ParserRegistry } from './parser-registry.js';
+export { DataFlexParser } from './dataflex.js';
+export { CobolParser } from './cobol.js';
+export { AbapParser } from './abap.js';
+export { RpgParser } from './rpg.js';
+export { Progress4glParser } from './progress4gl.js';
+export { PlsqlParser } from './plsql.js';
+export { FoxproParser } from './foxpro.js';
+export { DelphiParser } from './delphi.js';
+export { PowerBuilderParser } from './powerbuilder.js';
+export { NaturalParser } from './natural.js';
+export { PickBasicParser } from './pickbasic.js';
