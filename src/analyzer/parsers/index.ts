@@ -10,6 +10,7 @@ import { DelphiParser } from './delphi.js';
 import { PowerBuilderParser } from './powerbuilder.js';
 import { NaturalParser } from './natural.js';
 import { PickBasicParser } from './pickbasic.js';
+import { PhpParser } from './php.js';
 
 export function createDefaultRegistry(): ParserRegistry {
   const registry = new ParserRegistry();
@@ -24,6 +25,7 @@ export function createDefaultRegistry(): ParserRegistry {
   registry.register(new PowerBuilderParser());
   registry.register(new NaturalParser());
   registry.register(new PickBasicParser());
+  registry.register(new PhpParser());
   return registry;
 }
 
@@ -39,3 +41,4 @@ export { DelphiParser } from './delphi.js';
 export { PowerBuilderParser } from './powerbuilder.js';
 export { NaturalParser } from './natural.js';
 export { PickBasicParser } from './pickbasic.js';
+export { PhpParser } from './php.js';

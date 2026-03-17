@@ -225,6 +225,101 @@ Permite `instanceof` checks y acceso tipado a `code` y `details`.
 
 ---
 
+## 7. Adapter Pattern
+
+**Ubicación:** `src/db-connector/adapters/`
+
+**Problema:** Necesitamos soportar 5 motores de BD (PostgreSQL, MySQL, SQL Server, Oracle, DB2) con una interfaz unificada.
+
+**Solución:** Interfaz `IDbAdapter` con implementaciones específicas por motor. Una factory (`createAdapter`) resuelve el adaptador correcto según `databaseType`.
+
+```mermaid
+classDiagram
+    class IDbAdapter {
+        <<interface>>
+        +connect(config): Promise~void~
+        +disconnect(): Promise~void~
+        +healthCheck(): Promise~boolean~
+        +getTableNames(schema?): Promise~string[]~
+        +getTableSchema(name, schema?): Promise~TableSchema~
+    }
+
+    class PostgresAdapter
+    class MysqlAdapter
+    class MssqlAdapter
+    class OracleAdapter
+    class Db2Adapter
+
+    IDbAdapter <|.. PostgresAdapter
+    IDbAdapter <|.. MysqlAdapter
+    IDbAdapter <|.. MssqlAdapter
+    IDbAdapter <|.. OracleAdapter
+    IDbAdapter <|.. Db2Adapter
+```
+
+```typescript
+import { createAdapter } from 'erp-modernization-toolkit';
+
+const adapter = createAdapter('postgresql'); // resuelve PostgresAdapter
+await adapter.connect(config);
+```
+
+---
+
+## 8. Enrichment Pattern (Decoración Aditiva)
+
+**Ubicación:** `PlanEnricher`
+
+**Problema:** Necesitamos agregar metadata real de BD a un plan de descomposición sin modificar la estructura original.
+
+**Solución:** El `PlanEnricher` produce un `EnrichedPlan` que extiende `DecompositionPlan` con un campo `enrichment` adicional. Los campos originales se preservan intactos via spread operator.
+
+```mermaid
+graph TD
+    DP[DecompositionPlan] --> PE[PlanEnricher]
+    DB[(Base de Datos)] --> PE
+    PE --> EP[EnrichedPlan]
+    
+    subgraph EnrichedPlan
+        ORIG[campos originales del plan]
+        ENR[enrichment: serviceSchemas + crossServiceFKs + unvalidatedTables]
+    end
+```
+
+---
+
+## 9. Factory Pattern
+
+**Ubicación:** `createAdapter()` en `src/db-connector/adapters/types.ts`
+
+**Problema:** La creación de adaptadores de BD depende del tipo de base de datos, y el código cliente no debería conocer las clases concretas.
+
+**Solución:** Función factory que encapsula la lógica de instanciación:
+
+```typescript
+function createAdapter(databaseType: DatabaseType): IDbAdapter {
+  switch (databaseType) {
+    case 'postgresql': return new PostgresAdapter();
+    case 'mysql':      return new MysqlAdapter();
+    case 'mssql':      return new MssqlAdapter();
+    case 'oracle':     return new OracleAdapter();
+    case 'db2':        return new Db2Adapter();
+  }
+}
+```
+
+---
+
+## 10. Fuzzy Matching (Levenshtein)
+
+**Ubicación:** `src/db-connector/levenshtein.ts`, usado por `TableValidator`
+
+**Problema:** Cuando una tabla referenciada en código legacy no existe en la BD, el usuario necesita sugerencias de tablas similares (posibles errores de nombre o renombramientos).
+
+**Solución:** Implementación de distancia Levenshtein para encontrar tablas con nombres similares y sugerirlas en el `ValidationReport`.
+
+---
+
 ## Resumen de Patrones
 
 | Patrón | Componente | Beneficio |
@@ -235,3 +330,7 @@ Permite `instanceof` checks y acceso tipado a `code` y `details`.
 | Facade | Analyzer | API simple para flujo complejo |
 | Builder | GraphBuilder | Construcción incremental del grafo |
 | Error Hierarchy | ToolkitError | Manejo de errores tipado y granular |
+| Adapter | IDbAdapter + implementaciones | Soporte multi-BD con interfaz unificada |
+| Enrichment | PlanEnricher | Decoración aditiva sin mutar el original |
+| Factory | createAdapter() | Instanciación desacoplada de adaptadores |
+| Fuzzy Matching | Levenshtein + TableValidator | Sugerencias inteligentes para tablas no encontradas |

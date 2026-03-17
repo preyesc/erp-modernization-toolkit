@@ -158,6 +158,138 @@ sequenceDiagram
     end
 ```
 
+## Flujo de Conexión a BD
+
+```mermaid
+sequenceDiagram
+    participant U as Usuario
+    participant DC as DbConnector
+    participant AF as createAdapter
+    participant AD as IDbAdapter
+
+    U->>DC: connect(config)
+    DC->>DC: validateConfig(config)
+    alt Config inválida
+        DC-->>U: throw ConnectionError
+    end
+
+    DC->>AF: createAdapter(databaseType)
+    AF-->>DC: IDbAdapter
+
+    DC->>AD: connect(config)
+    alt Fallo de conexión
+        DC-->>U: throw ConnectionError
+    end
+
+    DC->>AD: healthCheck()
+    alt Health check falla
+        DC->>AD: disconnect()
+        DC-->>U: throw ConnectionError
+    end
+
+    DC-->>U: conectado
+
+    U->>DC: getAdapter()
+    DC-->>U: IDbAdapter
+
+    U->>DC: disconnect()
+    DC->>AD: disconnect()
+    DC-->>U: desconectado
+```
+
+## Flujo de Validación de Dependencias
+
+```mermaid
+sequenceDiagram
+    participant U as Usuario
+    participant TV as TableValidator
+    participant AD as IDbAdapter
+    participant LV as Levenshtein
+
+    U->>TV: validate(dbDeps, schemaFilter)
+    TV->>AD: getTableNames(schemaFilter)
+    AD-->>TV: string[] (tablas reales)
+
+    TV->>TV: agrupar referencias por tabla (case-insensitive)
+
+    loop Para cada tabla referenciada
+        alt Tabla existe en BD
+            TV->>TV: status = 'found'
+        else Tabla no existe
+            TV->>LV: findSimilar(tableName, dbTableNames)
+            LV-->>TV: sugerencias[]
+            TV->>TV: status = 'not_found' + suggestions
+        end
+    end
+
+    TV->>TV: construir ValidationSummary
+    TV-->>U: ValidationReport
+```
+
+## Flujo de Enriquecimiento del Plan
+
+```mermaid
+sequenceDiagram
+    participant U as Usuario
+    participant PE as PlanEnricher
+    participant DI as DbIntrospector
+    participant AD as IDbAdapter
+
+    U->>PE: enrich(plan, schemaFilter)
+
+    PE->>PE: collectUniqueTableNames(plan)
+    PE->>DI: getMultipleTableSchemas(tableNames, schemaFilter)
+
+    loop Para cada tabla
+        DI->>AD: getTableSchema(tableName, schemaFilter)
+        alt Tabla encontrada
+            AD-->>DI: TableSchema
+        else No encontrada
+            DI->>DI: set null
+        end
+    end
+
+    DI-->>PE: Map<string, TableSchema | null>
+
+    PE->>PE: buildServiceSchemas(plan, schemaMap)
+    PE->>PE: buildTableToServiceMap(plan)
+    PE->>PE: detectCrossServiceForeignKeys(schemaMap, tableToService)
+
+    PE-->>U: EnrichedPlan (plan original + enrichment)
+```
+
+## Flujo de Generación de OpenAPI
+
+```mermaid
+sequenceDiagram
+    participant U as Usuario
+    participant GEN as generateOpenApiFromEnrichedPlan
+    participant ESM as EnrichedSchemaMapper
+
+    U->>GEN: generateOpenApiFromEnrichedPlan(enrichedPlan, mapper)
+
+    loop Para cada servicio
+        GEN->>GEN: buscar ServiceSchemaMap del servicio
+
+        loop Para cada tabla validada
+            GEN->>ESM: mapTableSchemaToOpenApi(tableSchema)
+            ESM-->>GEN: OpenApiSchema
+            GEN->>GEN: buildCrudPaths(tableSchema, schemaName)
+            Note right of GEN: GET/POST collection<br/>GET/PUT/DELETE por PK
+        end
+
+        loop Para cada tabla no validada
+            GEN->>GEN: buildInferredSchema(tableName)
+            GEN->>GEN: buildInferredCrudPaths(tableName)
+            Note right of GEN: Schema mínimo inferido<br/>con advertencia WARNING
+        end
+
+        GEN->>GEN: construir OpenApiSpec
+    end
+
+    GEN-->>U: OpenApiSpec[]
+```
+
 ## Flujo de Serialización (Round-trip)
 
 ```mermaid
@@ -181,29 +313,48 @@ sequenceDiagram
         V-->>S: { valid: false, errors }
         S-->>U: throw SchemaValidationError
     end
-    S-->>U: AnalysisReport
+    S-->>U: objeto tipado
 ```
 
-## Flujo Completo del Pipeline (futuro)
+## Flujo Completo del Pipeline
 
 ```mermaid
 sequenceDiagram
     participant U as Usuario
     participant A as Analyzer
+    participant DC as DbConnector
+    participant DI as DbIntrospector
+    participant TV as TableValidator
     participant D as Decomposer
+    participant PE as PlanEnricher
     participant G as ApiGenerator
     participant E as Exporter
 
     U->>A: analyze(projectPath)
     A-->>U: AnalysisReport
 
+    U->>DC: connect(config)
+    DC-->>U: conectado
+
+    U->>DI: listTables(schema)
+    DI-->>U: string[]
+
+    U->>TV: validate(dbDeps, schema)
+    TV-->>U: ValidationReport
+
     U->>D: decompose(report)
+    Note right of D: Pendiente de implementación
     D-->>U: DecompositionPlan
 
-    U->>G: generate(plan)
+    U->>PE: enrich(plan, schema)
+    PE-->>U: EnrichedPlan
+
+    U->>G: generateOpenApiFromEnrichedPlan(enrichedPlan)
     G-->>U: OpenApiSpec[]
 
     U->>E: export(options)
-    Note right of E: Empaqueta report,<br/>plan y specs en<br/>JSON + MD + SVG
+    Note right of E: Pendiente de implementación
     E-->>U: ExportResult
+
+    U->>DC: disconnect()
 ```
