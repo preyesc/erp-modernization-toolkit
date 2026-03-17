@@ -1,0 +1,10 @@
+{
+  "name": "example-usage",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "erp-modernization-toolkit": "file:.."
+  }
+}

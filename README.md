@@ -35,6 +35,15 @@ Conjunto de herramientas para facilitar la modernización de sistemas ERP legacy
 - **Generador API** — Produce especificaciones OpenAPI 3.x con endpoints CRUD, schemas derivados de tablas y códigos de respuesta HTTP estándar.
 - **Exportador** — Empaqueta resultados en JSON, Markdown y SVG (grafo de dependencias con codificación de colores).
 
+## Documentación
+
+La documentación técnica completa está en [`docs/`](./docs/):
+
+- [Guía de Uso](./docs/usage.md) — API, ejemplos y componentes individuales
+- [Arquitectura](./docs/architecture.md) — Diseño del sistema y decisiones
+- [Diagramas de Secuencia](./docs/sequences.md) — Flujos de ejecución detallados
+- [Patrones de Diseño](./docs/patterns.md) — Patrones aplicados en la implementación
+
 ## Requisitos
 
 - Node.js >= 18
@@ -109,7 +118,7 @@ console.log(`Advertencias: ${report.warnings.length}`);
 
 ## Licencia
 
-MIT
+[MIT](./LICENSE)
 
 ## Errores Tipados
 

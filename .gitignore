@@ -13,3 +13,4 @@ Thumbs.db
 npm-debug.log*
 coverage/
 .k*
+example_usage/example_usage/output/

@@ -339,3 +339,142 @@ export interface ValidationResult {
   valid: boolean;
   errors: string[];
 }
+
+// === Database Connection ===
+
+export type DatabaseType = 'postgresql' | 'mysql' | 'mssql' | 'oracle' | 'db2';
+
+export interface ConnectionConfig {
+  databaseType: DatabaseType;
+  host: string;
+  port: number;
+  databaseName: string;
+  username: string;
+  password: string;
+  schemaFilter?: string;
+}
+
+// === Schema Introspection ===
+
+export interface TableSchema {
+  tableName: string;
+  schemaName: string;
+  columns: ColumnSchema[];
+  primaryKey: PrimaryKeyInfo;
+  foreignKeys: ForeignKeyInfo[];
+}
+
+export interface ColumnSchema {
+  name: string;
+  dataType: string;
+  nullable: boolean;
+  defaultValue: string | null;
+  isPrimaryKey: boolean;
+}
+
+export interface PrimaryKeyInfo {
+  constraintName: string;
+  columns: string[];
+}
+
+export interface ForeignKeyInfo {
+  constraintName: string;
+  columns: string[];
+  referencedTable: string;
+  referencedColumns: string[];
+}
+
+// === Validation Report ===
+
+export interface ValidationReport {
+  metadata: ValidationReportMetadata;
+  results: TableValidationResult[];
+  summary: ValidationSummary;
+}
+
+export interface ValidationReportMetadata {
+  validatedAt: string;
+  databaseType: DatabaseType;
+  databaseName: string;
+  toolkitVersion: string;
+}
+
+export interface TableValidationResult {
+  tableName: string;
+  status: 'found' | 'not_found';
+  schemaLocation?: string;
+  sourceReferences: SourceLocation[];
+  suggestions?: string[];
+}
+
+export interface ValidationSummary {
+  totalReferences: number;
+  foundCount: number;
+  notFoundCount: number;
+}
+
+// === Enriched Plan ===
+
+export interface EnrichedPlan extends DecompositionPlan {
+  enrichment: PlanEnrichmentData;
+}
+
+export interface PlanEnrichmentData {
+  enrichedAt: string;
+  databaseType: DatabaseType;
+  serviceSchemas: ServiceSchemaMap[];
+  crossServiceForeignKeys: CrossServiceForeignKey[];
+  unvalidatedTables: string[];
+}
+
+export interface ServiceSchemaMap {
+  serviceName: string;
+  tableSchemas: TableSchema[];
+}
+
+export interface CrossServiceForeignKey {
+  sourceService: string;
+  sourceTable: string;
+  sourceColumns: string[];
+  targetService: string;
+  targetTable: string;
+  targetColumns: string[];
+  constraintName: string;
+}
+
+// === DB Connector Interfaces ===
+
+export interface IDbAdapter {
+  connect(config: ConnectionConfig): Promise<void>;
+  disconnect(): Promise<void>;
+  healthCheck(): Promise<boolean>;
+  getTableNames(schemaFilter?: string): Promise<string[]>;
+  getTableSchema(tableName: string, schemaFilter?: string): Promise<TableSchema>;
+  isConnected(): boolean;
+}
+
+export interface IDbConnector {
+  connect(config: ConnectionConfig): Promise<void>;
+  disconnect(): Promise<void>;
+  isConnected(): boolean;
+  getAdapter(): IDbAdapter;
+}
+
+export interface IDbIntrospector {
+  listTables(schemaFilter?: string): Promise<string[]>;
+  getTableSchema(tableName: string, schemaFilter?: string): Promise<TableSchema>;
+  getMultipleTableSchemas(tableNames: string[], schemaFilter?: string): Promise<Map<string, TableSchema | null>>;
+}
+
+export interface ITableValidator {
+  validate(dbDeps: DbDependencyMap, schemaFilter?: string): Promise<ValidationReport>;
+}
+
+export interface IPlanEnricher {
+  enrich(plan: DecompositionPlan, schemaFilter?: string): Promise<EnrichedPlan>;
+}
+
+export interface IEnrichedSchemaMapper {
+  mapTableSchemaToOpenApi(schema: TableSchema): OpenApiSchema;
+  mapColumnType(dbType: string, databaseType: DatabaseType): OpenApiSchemaProperty;
+}

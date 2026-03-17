@@ -1,3 +1,5 @@
+import { DatabaseType } from './types';
+
 export class ToolkitError extends Error {
   constructor(
     public readonly code: string,
@@ -48,5 +50,29 @@ export class InvalidPlanError extends ToolkitError {
 export class ExportIOError extends ToolkitError {
   constructor(path: string, reason: string) {
     super('EXPORT_IO', `Error de escritura en disco: ${reason} (ruta: ${path})`, { path, reason });
+  }
+}
+
+export class ConnectionError extends ToolkitError {
+  constructor(databaseType: DatabaseType, reason: string) {
+    super('DB_CONNECTION', `Failed to connect to ${databaseType}: ${reason}`, { databaseType, reason });
+  }
+}
+
+export class ConnectionLostError extends ToolkitError {
+  constructor(operation: string) {
+    super('DB_CONNECTION_LOST', `Connection lost during: ${operation}`, { operation });
+  }
+}
+
+export class TableNotFoundError extends ToolkitError {
+  constructor(tableName: string, suggestions?: string[]) {
+    super('TABLE_NOT_FOUND', `Table not found: ${tableName}`, { tableName, suggestions });
+  }
+}
+
+export class IntrospectionError extends ToolkitError {
+  constructor(tableName: string, reason: string) {
+    super('INTROSPECTION', `Failed to introspect table ${tableName}: ${reason}`, { tableName, reason });
   }
 }
